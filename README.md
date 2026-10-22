@@ -1,5 +1,7 @@
 # Order Management System
 
+**English** | [Português (Brasil)](README.pt-BR.md)
+
 Event-driven order management built with Spring Boot microservices.
 An order is accepted over REST and published to Kafka. Two independent services then consume it: one stores it in MongoDB, the other prints it to the console.
 
