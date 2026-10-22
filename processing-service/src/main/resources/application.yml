@@ -1,0 +1,47 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: processing-service
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/order_management}
+      auto-index-creation: true
+    web:
+      pageable:
+        max-page-size: 100
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      # Each service has its own group, so every group receives every order
+      group-id: processing-service
+      # A new group starts from the beginning of the topic, so no order published before startup is lost
+      auto-offset-reset: earliest
+
+app:
+  kafka:
+    orders-topic: pedidos
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  info:
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
+
+info:
+  app:
+    name: ${spring.application.name}
+    description: Consumes orders from Kafka and stores them in MongoDB

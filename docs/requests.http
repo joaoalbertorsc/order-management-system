@@ -1,0 +1,102 @@
+### Sample requests for the order management system.
+### Run them from IntelliJ IDEA (HTTP Client) or VS Code (REST Client extension).
+
+@orderService = http://localhost:8081
+@processingService = http://localhost:8082
+@printService = http://localhost:8083
+
+### 1. Create an order -> 202 Accepted
+POST {{orderService}}/orders
+Content-Type: application/json
+
+{
+  "customerName": "Ana Souza",
+  "customerEmail": "ana@example.com",
+  "items": [
+    { "productId": "SKU-1", "productName": "Mechanical keyboard", "quantity": 2, "unitPrice": 150.00 },
+    { "productId": "SKU-2", "productName": "Mouse", "quantity": 1, "unitPrice": 79.90 }
+  ]
+}
+
+### 2. Invalid fields -> 400 with one error per field
+POST {{orderService}}/orders
+Content-Type: application/json
+
+{
+  "customerName": "",
+  "customerEmail": "not-an-email",
+  "items": [
+    { "productId": "SKU-1", "productName": "Keyboard", "quantity": 0, "unitPrice": -1 }
+  ]
+}
+
+### 3. Business rule: same product twice -> 422
+POST {{orderService}}/orders
+Content-Type: application/json
+
+{
+  "customerName": "Ana Souza",
+  "customerEmail": "ana@example.com",
+  "items": [
+    { "productId": "SKU-1", "productName": "Keyboard", "quantity": 1, "unitPrice": 150.00 },
+    { "productId": "SKU-1", "productName": "Keyboard", "quantity": 1, "unitPrice": 150.00 }
+  ]
+}
+
+### 4. Business rule: total above 50,000.00 -> 422
+POST {{orderService}}/orders
+Content-Type: application/json
+
+{
+  "customerName": "Ana Souza",
+  "customerEmail": "ana@example.com",
+  "items": [
+    { "productId": "SKU-9", "productName": "Server rack", "quantity": 10, "unitPrice": 9999.99 }
+  ]
+}
+
+### 5. List orders (newest first, paged)
+GET {{processingService}}/orders?page=0&size=20
+
+### 6. List orders filtered by status
+GET {{processingService}}/orders?status=CREATED
+
+### 7. Get one order (replace the id with one returned by request 1)
+@orderId = replace-with-an-order-id
+GET {{processingService}}/orders/{{orderId}}
+
+### 8. Confirm the order -> 200
+PATCH {{processingService}}/orders/{{orderId}}/status
+Content-Type: application/json
+
+{ "status": "CONFIRMED" }
+
+### 9. Transition not allowed by the lifecycle -> 409
+PATCH {{processingService}}/orders/{{orderId}}/status
+Content-Type: application/json
+
+{ "status": "CREATED" }
+
+### 10. Unknown order -> 404
+GET {{processingService}}/orders/does-not-exist
+
+### Actuator: health of each service
+GET {{orderService}}/actuator/health
+
+###
+GET {{processingService}}/actuator/health
+
+###
+GET {{printService}}/actuator/health
+
+### Actuator: info
+GET {{processingService}}/actuator/info
+
+### Actuator: business metrics
+GET {{orderService}}/actuator/metrics/orders.published
+
+###
+GET {{processingService}}/actuator/metrics/orders.stored
+
+###
+GET {{printService}}/actuator/metrics/orders.printed
