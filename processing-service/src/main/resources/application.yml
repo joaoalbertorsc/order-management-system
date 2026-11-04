@@ -11,3 +11,14 @@ spring:
     web:
       pageable:
         max-page-size: 100
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      # Each service has its own group, so every group receives every order
+      group-id: processing-service
+      # A new group starts from the beginning of the topic, so no order published before startup is lost
+      auto-offset-reset: earliest
+
+app:
+  kafka:
+    orders-topic: pedidos
