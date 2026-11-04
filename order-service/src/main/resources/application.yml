@@ -23,7 +23,8 @@ app:
       partitions: 3
       replication-factor: 1
   orders:
-    max-total-amount: 50000.00
+    # Quoted so YAML does not turn it into a float and drop the trailing zero
+    max-total-amount: "50000.00"
 
 management:
   endpoints:
