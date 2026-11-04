@@ -5,6 +5,7 @@ FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /workspace
 COPY pom.xml .
 COPY order-service/pom.xml order-service/
+COPY processing-service/pom.xml processing-service/
 COPY order-service/src order-service/src
 RUN --mount=type=cache,target=/root/.m2 mvn -B -q -pl order-service -am package -DskipTests
 
