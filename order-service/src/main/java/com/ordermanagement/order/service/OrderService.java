@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Service
@@ -28,7 +29,9 @@ public class OrderService {
      * Builds a new order, checks it against every business rule and publishes it for the downstream services.
      */
     public Order createOrder(Customer customer, List<OrderItem> items) {
-        Order order = Order.create(customer, items, Instant.now(clock));
+        // MongoDB keeps milliseconds only; truncating here makes every service show the same timestamp
+        Instant createdAt = Instant.now(clock).truncatedTo(ChronoUnit.MILLIS);
+        Order order = Order.create(customer, items, createdAt);
         validationRules.forEach(rule -> rule.validate(order));
         eventPublisher.publishOrderCreated(order);
         return order;

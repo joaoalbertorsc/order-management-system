@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 /**
  * Reads stored orders and changes their status on behalf of the REST API.
@@ -47,7 +48,8 @@ public class OrderService {
     public Order updateStatus(String orderId, OrderStatus newStatus) {
         Order order = findOrder(orderId);
         OrderStatus previousStatus = order.getStatus();
-        order.changeStatus(newStatus, Instant.now(clock));
+        // Truncated to MongoDB's millisecond precision, so the response matches what a later read returns
+        order.changeStatus(newStatus, Instant.now(clock).truncatedTo(ChronoUnit.MILLIS));
         Order saved = orderRepository.save(order);
         log.info("Order {} status changed from {} to {}", orderId, previousStatus, newStatus);
         return saved;
