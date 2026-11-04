@@ -4,3 +4,13 @@ server:
 spring:
   application:
     name: print-service
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      # A different group from the processing-service, so this service also receives every order
+      group-id: print-service
+      auto-offset-reset: earliest
+
+app:
+  kafka:
+    orders-topic: pedidos
