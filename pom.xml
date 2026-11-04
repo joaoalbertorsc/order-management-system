@@ -19,6 +19,10 @@
     <name>order-management-system</name>
     <description>Event-driven order management system built with Spring Boot, Kafka and MongoDB</description>
 
+    <modules>
+        <module>order-service</module>
+    </modules>
+
     <properties>
         <java.version>21</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
