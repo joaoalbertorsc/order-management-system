@@ -6,6 +6,7 @@ WORKDIR /workspace
 COPY pom.xml .
 COPY order-service/pom.xml order-service/
 COPY processing-service/pom.xml processing-service/
+COPY print-service/pom.xml print-service/
 COPY processing-service/src processing-service/src
 RUN --mount=type=cache,target=/root/.m2 mvn -B -q -pl processing-service -am package -DskipTests
 
