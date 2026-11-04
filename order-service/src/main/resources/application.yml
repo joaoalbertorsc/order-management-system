@@ -1,0 +1,50 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: order-service
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      acks: all
+      properties:
+        enable.idempotence: true
+        # Fail fast when the broker is unreachable instead of blocking the HTTP request for a minute
+        max.block.ms: 5000
+        request.timeout.ms: 5000
+        delivery.timeout.ms: 10000
+
+app:
+  kafka:
+    send-timeout: 15s
+    orders-topic:
+      name: pedidos
+      partitions: 3
+      replication-factor: 1
+  orders:
+    # Quoted so YAML does not turn it into a float and drop the trailing zero
+    max-total-amount: "50000.00"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  info:
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
+
+info:
+  app:
+    name: ${spring.application.name}
+    description: Receives orders over REST and publishes them to Kafka

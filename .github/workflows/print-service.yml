@@ -1,0 +1,45 @@
+# Builds and tests print-service whenever its code or the parent pom changes.
+name: print-service
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'print-service/**'
+      - '!print-service/**/*.md'
+      - 'pom.xml'
+      - '.mvn/**'
+      - '.github/workflows/print-service.yml'
+  pull_request:
+    paths:
+      - 'print-service/**'
+      - '!print-service/**/*.md'
+      - 'pom.xml'
+      - '.mvn/**'
+      - '.github/workflows/print-service.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Test
+        run: ./mvnw -B -pl print-service -am verify
+
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: print-service-test-reports
+          path: print-service/target/surefire-reports/

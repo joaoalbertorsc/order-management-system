@@ -1,0 +1,45 @@
+# Builds and tests order-service whenever its code or the parent pom changes.
+name: order-service
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'order-service/**'
+      - '!order-service/**/*.md'
+      - 'pom.xml'
+      - '.mvn/**'
+      - '.github/workflows/order-service.yml'
+  pull_request:
+    paths:
+      - 'order-service/**'
+      - '!order-service/**/*.md'
+      - 'pom.xml'
+      - '.mvn/**'
+      - '.github/workflows/order-service.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Test
+        run: ./mvnw -B -pl order-service -am verify
+
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: order-service-test-reports
+          path: order-service/target/surefire-reports/
