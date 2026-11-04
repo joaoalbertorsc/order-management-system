@@ -1,5 +1,6 @@
 package com.ordermanagement.processing.api.error;
 
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.ordermanagement.processing.exception.InvalidStatusTransitionException;
 import com.ordermanagement.processing.exception.OrderNotFoundException;
 import org.slf4j.Logger;
@@ -10,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.lang.NonNull;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -62,6 +65,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 "An unexpected error occurred.");
         problem.setTitle("Internal error");
         return problem;
+    }
+
+    /** Tells the client which values are accepted when an enum field (e.g. status) gets an unknown value. */
+    @Override
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(@NonNull HttpMessageNotReadableException ex,
+                                                                  @NonNull HttpHeaders headers,
+                                                                  @NonNull HttpStatusCode status,
+                                                                  @NonNull WebRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status,
+                "The request body is not valid JSON or contains a value of the wrong type.");
+        problem.setTitle("Unreadable request");
+        if (ex.getCause() instanceof InvalidFormatException invalidValue && invalidValue.getTargetType().isEnum()) {
+            problem.setDetail("Invalid value '%s'. Accepted values: %s".formatted(
+                    invalidValue.getValue(), Arrays.toString(invalidValue.getTargetType().getEnumConstants())));
+        }
+        return handleExceptionInternal(ex, problem, headers, status, request);
     }
 
     /** Adds a field-by-field list of validation messages to the default 400 response. */

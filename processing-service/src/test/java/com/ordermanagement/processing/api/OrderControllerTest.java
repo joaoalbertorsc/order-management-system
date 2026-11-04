@@ -99,6 +99,16 @@ class OrderControllerTest {
     }
 
     @Test
+    void listsTheAcceptedValuesForAnUnknownStatus() throws Exception {
+        mockMvc.perform(patch("/orders/order-1/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\": \"LOST\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value(
+                        "Invalid value 'LOST'. Accepted values: [CREATED, CONFIRMED, SHIPPED, DELIVERED, CANCELLED]"));
+    }
+
+    @Test
     void returns400WhenTheStatusIsMissing() throws Exception {
         mockMvc.perform(patch("/orders/order-1/status")
                         .contentType(MediaType.APPLICATION_JSON)
