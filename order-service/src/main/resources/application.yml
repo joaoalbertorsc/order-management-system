@@ -1,0 +1,16 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: order-service
+
+app:
+  kafka:
+    send-timeout: 15s
+    orders-topic:
+      name: pedidos
+      partitions: 3
+      replication-factor: 1
+  orders:
+    max-total-amount: 50000.00
