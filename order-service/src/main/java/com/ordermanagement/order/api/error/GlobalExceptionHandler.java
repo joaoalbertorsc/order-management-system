@@ -2,6 +2,7 @@ package com.ordermanagement.order.api.error;
 
 import com.ordermanagement.order.exception.InvalidOrderException;
 import com.ordermanagement.order.exception.OrderPublishingException;
+import com.ordermanagement.order.exception.PublishingSuspendedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -45,6 +46,20 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problem.setTitle("Messaging unavailable");
         problem.setProperty("orderId", ex.getOrderId());
         return problem;
+    }
+
+    /** The circuit breaker refused the order without calling Kafka; no stack trace, it is an expected state. */
+    @ExceptionHandler(PublishingSuspendedException.class)
+    public ResponseEntity<ProblemDetail> handlePublishingSuspended(PublishingSuspendedException ex) {
+        log.warn("Order {} refused: Kafka circuit breaker is open", ex.getOrderId());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE,
+                "Orders cannot be sent for processing right now. Please try again later.");
+        problem.setTitle("Messaging unavailable");
+        problem.setProperty("orderId", ex.getOrderId());
+        long retryAfterSeconds = Math.max(1, ex.getRetryAfter().toSeconds());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(retryAfterSeconds))
+                .body(problem);
     }
 
     @ExceptionHandler(Exception.class)

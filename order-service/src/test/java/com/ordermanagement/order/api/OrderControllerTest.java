@@ -5,6 +5,7 @@ import com.ordermanagement.order.domain.Order;
 import com.ordermanagement.order.domain.OrderItem;
 import com.ordermanagement.order.exception.InvalidOrderException;
 import com.ordermanagement.order.exception.OrderPublishingException;
+import com.ordermanagement.order.exception.PublishingSuspendedException;
 import com.ordermanagement.order.service.OrderService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.time.Duration;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -21,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -100,6 +104,19 @@ class OrderControllerTest {
 
         mockMvc.perform(post("/orders").contentType(MediaType.APPLICATION_JSON).content(VALID_ORDER))
                 .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.title").value("Messaging unavailable"))
+                .andExpect(jsonPath("$.orderId").value("order-1"));
+    }
+
+    @Test
+    void returns503WithRetryAfterWhileTheCircuitBreakerIsOpen() throws Exception {
+        when(orderService.createOrder(any(), anyList()))
+                .thenThrow(new PublishingSuspendedException("order-1", Duration.ofSeconds(10),
+                        new RuntimeException("circuit open")));
+
+        mockMvc.perform(post("/orders").contentType(MediaType.APPLICATION_JSON).content(VALID_ORDER))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(header().string("Retry-After", "10"))
                 .andExpect(jsonPath("$.title").value("Messaging unavailable"))
                 .andExpect(jsonPath("$.orderId").value("order-1"));
     }
