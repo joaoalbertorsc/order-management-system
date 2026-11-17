@@ -16,7 +16,8 @@ flowchart LR
         formatter[OrderReceiptFormatter]
     end
 
-    errorHandler["DefaultErrorHandler<br/>retry 2x, then skip"]
+    errorHandler["DefaultErrorHandler<br/>retry 2x, then DLT"]
+    dlt[["pedidos.print-service.DLT"]]
 
     kafka -- "consumer group print-service" --> listener
     listener -- "deserialized" --> event
@@ -25,6 +26,7 @@ flowchart LR
     consolePrinter -- "format(order)" --> formatter
     consolePrinter -- "log.info(receipt)" --> console
     listener -. "exceptions" .-> errorHandler
+    errorHandler -- "unprintable records" --> dlt
 ```
 
 The listener only knows the `OrderPrinter` interface. Printing to a file, to a thermal printer or to a chat channel would need a new implementation, and the Kafka side wouldn't change. Formatting is a separate class, so it can be unit-tested without capturing console output.

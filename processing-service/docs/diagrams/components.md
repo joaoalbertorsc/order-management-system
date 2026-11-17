@@ -30,7 +30,8 @@ flowchart LR
     end
 
     repo[OrderRepository]
-    errorHandler["DefaultErrorHandler<br/>retry 3x, then skip"]
+    errorHandler["DefaultErrorHandler<br/>backoff up to 5 min, then DLT"]
+    dlt[["pedidos.processing-service.DLT"]]
 
     kafka -- "JSON" --> listener
     listener -- "deserialized" --> event
@@ -38,6 +39,7 @@ flowchart LR
     processing --> validator
     processing -- "insert" --> repo
     listener -. "exceptions" .-> errorHandler
+    errorHandler -- "unprocessable records" --> dlt
 
     client -- "GET / PATCH" --> controller
     controller --> orderService
@@ -57,4 +59,4 @@ flowchart LR
 | `OrderService` | Lists orders, finds one, changes its status |
 | `Order` | Holds the data and refuses status changes the lifecycle doesn't allow |
 | `OrderRepository` | MongoDB access (Spring Data) |
-| `DefaultErrorHandler` | Retries transient failures and skips messages that can never be processed |
+| `DefaultErrorHandler` | Retries transient failures with exponential backoff and sends what still fails, or can never succeed, to the dead letter topic |

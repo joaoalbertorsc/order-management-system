@@ -21,7 +21,8 @@ sequenceDiagram
 
     alt malformed JSON or unexpected error
         K-->>E: exception
-        E->>E: retry (unless malformed), then log and skip
+        E->>E: retry twice (unless malformed)
+        E->>K: still failing, so send it to pedidos.print-service.DLT
         E->>K: commit offset
     end
 ```
