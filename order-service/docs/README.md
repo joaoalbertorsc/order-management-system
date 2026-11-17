@@ -63,6 +63,7 @@ Why `202` and not `201`: the order is safely in Kafka, but it is stored by anoth
 | `400` | A field breaks the rules above, or the JSON is malformed. The body lists every invalid field. | `MethodArgumentNotValidException` / `HttpMessageNotReadableException` |
 | `422` | A business rule rejects the order | `InvalidOrderException` |
 | `503` | Kafka did not acknowledge the order (broker down or timeout, about 10 s at most) | `OrderPublishingException` |
+| `503` + `Retry-After` | Refused at once: most recent publishes failed, so the circuit breaker is open | `PublishingSuspendedException` |
 | `500` | Anything unexpected (details are only logged) | any other exception |
 
 Example `400`:
@@ -103,6 +104,12 @@ Each rule is a separate `OrderValidationRule` bean. The `OrderService` runs ever
 | `delivery.timeout.ms` | 10 s | Upper bound for one send, retries included |
 
 `KafkaOrderEventPublisher` waits for the broker's acknowledgment before the HTTP response is sent. If none arrives, it throws `OrderPublishingException`, and the client gets a `503` instead of a false success.
+
+### Circuit breaker
+
+`CircuitBreakingOrderEventPublisher` wraps that publisher in a [Resilience4j](https://resilience4j.readme.io/) circuit breaker named `kafka-publisher`. When at least half of the last 10 publishes failed (after at least 5), the circuit opens: for 10 seconds new orders get a `503` with `Retry-After: 10` right away, instead of each request holding a thread for up to 10 seconds while Kafka is down. Then 3 trial publishes decide whether to close it again or wait another 10 seconds.
+
+The state is shown under `circuitBreakers` in `/actuator/health` (it never turns the service `DOWN`) and as `resilience4j.circuitbreaker.*` metrics. The settings are under `resilience4j.circuitbreaker.instances.kafka-publisher` in `application.yml`.
 
 ## Configuration
 

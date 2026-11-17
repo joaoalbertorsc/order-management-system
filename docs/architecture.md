@@ -78,6 +78,7 @@ Every failure has a custom exception or a well-defined behavior:
 | Malformed JSON body | both APIs | `HttpMessageNotReadableException` | `400` |
 | Business rule broken (same product twice, total above limit) | order-service | `InvalidOrderException` | `422` |
 | Kafka unreachable or not acknowledging in time | order-service | `OrderPublishingException` | `503`, metric `orders.publish.failures` |
+| Kafka failing repeatedly | order-service | Resilience4j circuit breaker, `PublishingSuspendedException` | `503` with `Retry-After` at once, without calling Kafka, until trial publishes succeed |
 | Message on the topic is not valid JSON | both consumers | `ErrorHandlingDeserializer` | Moved to the service's dead letter topic as it arrived, no retry |
 | Message is missing required data | processing-service | `InvalidOrderEventException` | Moved to the dead letter topic, no retry |
 | MongoDB temporarily down | processing-service | `DefaultErrorHandler`, exponential backoff | Retried for up to 5 minutes (1 s, 2 s, 4 s... at most 30 s apart) while the partition waits, then moved to the dead letter topic |
