@@ -14,7 +14,7 @@ sequenceDiagram
     K->>D: record (key = orderId, JSON value)
     alt not valid JSON
         D-->>E: DeserializationException
-        E->>E: log and skip (no retry)
+        E->>K: original bytes to the dead letter topic (no retry)
         E->>K: commit offset
     else valid JSON
         D->>L: OrderCreatedEvent
@@ -22,7 +22,7 @@ sequenceDiagram
         S->>V: validate(event)
         alt required data missing
             V-->>E: InvalidOrderEventException
-            E->>E: log and skip (no retry)
+            E->>K: event to the dead letter topic (no retry)
             E->>K: commit offset
         else event valid
             S->>DB: insert Order (status CREATED, _id = orderId)
@@ -35,12 +35,12 @@ sequenceDiagram
             else MongoDB unavailable
                 DB--xS: error
                 S-->>E: exception
-                E->>L: redeliver, up to 3 retries, 1 s apart
-                E->>E: still failing, so log and skip
+                E->>L: redeliver with exponential backoff (1 s, 2 s, 4 s... max 30 s), for up to 5 min
+                E->>K: still failing, so send it to the dead letter topic
             end
             L->>K: commit offset
         end
     end
 ```
 
-The offset is committed only after a record is handled (stored, ignored as duplicate, or skipped). If the service crashes halfway, Kafka redelivers the record on restart, and the duplicate check keeps that redelivery harmless.
+The offset is committed only after a record is handled (stored, ignored as duplicate, or moved to the dead letter topic). If the service crashes halfway, Kafka redelivers the record on restart, and the duplicate check keeps that redelivery harmless.

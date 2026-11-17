@@ -63,11 +63,11 @@ sequenceDiagram
         PS->>PS: ignore, count orders.duplicates
     else MongoDB down
         K->>PS: OrderCreatedEvent
-        loop up to 3 retries, 1s apart
+        loop retries with exponential backoff, up to 5 min
             PS->>DB: insert
             DB--xPS: error
         end
-        PS->>PS: log and skip the record
+        PS->>K: still failing, so move it to pedidos.processing-service.DLT
     end
 ```
 

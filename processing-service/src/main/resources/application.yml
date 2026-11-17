@@ -22,6 +22,8 @@ spring:
 app:
   kafka:
     orders-topic: pedidos
+    # Records this service could not handle, kept for inspection and replay
+    dead-letter-topic: pedidos.processing-service.DLT
 
 management:
   endpoints:
