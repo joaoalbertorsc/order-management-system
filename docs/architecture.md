@@ -86,6 +86,7 @@ Every failure has a custom exception or a well-defined behavior:
 | Order id does not exist | processing-service | `OrderNotFoundException` | `404` |
 | Status change not allowed by the lifecycle | processing-service | `InvalidStatusTransitionException` | `409` listing the allowed statuses |
 | Two status updates at the same time | processing-service | Optimistic locking (`@Version`) | `409`, client retries |
+| MongoDB down while a client reads or updates orders | processing-service | Driver timeouts (3 s to find the server, 5 s per read) and `DataAccessResourceFailureException` | `503` with `Retry-After: 5`, within a few seconds instead of 30 |
 | Anything unexpected | both APIs | Catch-all handler | `500` without internal details (logged in full) |
 
 No order is dropped by a consumer. A record it cannot handle goes to its own dead letter topic, `pedidos.processing-service.DLT` or `pedidos.print-service.DLT`, with the original key and value plus headers naming the original topic, partition, offset and exception. It can be inspected in Kafka UI and replayed by publishing it to `pedidos` again. Each service has its own topic, so replaying a record only affects the service that failed it, as long as it is sent back to that service alone.

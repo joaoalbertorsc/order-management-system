@@ -5,6 +5,7 @@ import com.ordermanagement.processing.exception.InvalidStatusTransitionException
 import com.ordermanagement.processing.exception.OrderNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -33,6 +34,7 @@ import java.util.Objects;
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private static final int RETRY_AFTER_SECONDS = 5;
 
     @ExceptionHandler(OrderNotFoundException.class)
     public ProblemDetail handleNotFound(OrderNotFoundException ex) {
@@ -56,6 +58,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 "The order was modified by another request. Reload it and try again.");
         problem.setTitle("Concurrent update");
         return problem;
+    }
+
+    /** MongoDB unreachable or too slow: a temporary condition, so the client is told when to try again. */
+    @ExceptionHandler(DataAccessResourceFailureException.class)
+    public ResponseEntity<ProblemDetail> handleDatabaseUnavailable(DataAccessResourceFailureException ex) {
+        log.warn("MongoDB unavailable: {}", ex.getMostSpecificCause().getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE,
+                "The order database is temporarily unavailable. Try again in a few seconds.");
+        problem.setTitle("Database unavailable");
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(RETRY_AFTER_SECONDS))
+                .body(problem);
     }
 
     @ExceptionHandler(Exception.class)
