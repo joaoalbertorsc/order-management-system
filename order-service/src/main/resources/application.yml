@@ -26,7 +26,26 @@ app:
     # Quoted so YAML does not turn it into a float and drop the trailing zero
     max-total-amount: "50000.00"
 
+resilience4j:
+  circuitbreaker:
+    instances:
+      kafka-publisher:
+        # Opens when at least half of the last 10 publishes failed (once 5 have been made)
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        # Refuses orders for 10 s, then lets 3 trial publishes decide whether Kafka is back
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        register-health-indicator: true
+        # An open circuit shows in /actuator/health without turning the service DOWN
+        allow-health-indicator-to-fail: false
+
 management:
+  health:
+    circuitbreakers:
+      enabled: true
   endpoints:
     web:
       exposure:

@@ -14,6 +14,10 @@
     <name>order-service</name>
     <description>Receives orders over REST and publishes them to the Kafka topic "pedidos"</description>
 
+    <properties>
+        <resilience4j.version>2.4.0</resilience4j.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -30,6 +34,11 @@
         <dependency>
             <groupId>org.springframework.kafka</groupId>
             <artifactId>spring-kafka</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-spring-boot3</artifactId>
+            <version>${resilience4j.version}</version>
         </dependency>
 
         <dependency>
