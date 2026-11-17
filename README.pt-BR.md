@@ -38,6 +38,7 @@ flowchart LR
 - Spring for Apache Kafka (producer e consumers)
 - Spring Data MongoDB
 - Spring Boot Actuator (health, info e métricas)
+- Resilience4j (circuit breaker em volta do producer Kafka)
 - Apache Kafka 3.9 em modo KRaft (sem ZooKeeper), MongoDB 7, Kafka UI
 - Docker Compose para subir o ambiente completo
 - JUnit 5, Mockito, AssertJ e MockMvc nos testes

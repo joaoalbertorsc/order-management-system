@@ -23,10 +23,10 @@ Diagrams:
 
 | Problem | Behavior |
 |---|---|
-| Message is not valid JSON | `ErrorHandlingDeserializer` turns it into an error. It is logged and skipped without retrying. |
-| Event misses required data | `InvalidOrderEventException`. Logged and skipped without retrying. |
+| Message is not valid JSON | `ErrorHandlingDeserializer` turns it into an error. It goes to `pedidos.processing-service.DLT`, byte for byte, without retrying. |
+| Event misses required data | `InvalidOrderEventException`. Sent to the dead letter topic without retrying. |
 | Same order received again | `DuplicateKeyException` is caught. Logged as a warning, metric `orders.duplicates`. |
-| MongoDB unavailable or another transient error | Retried 3 times, 1 second apart (`DefaultErrorHandler`), then logged and skipped. |
+| MongoDB unavailable or another transient error | Retried with exponential backoff (1 s, 2 s, 4 s... at most 30 s apart) for up to 5 minutes. The partition waits meanwhile, so later orders are not skipped either. If it still fails, the record goes to the dead letter topic. |
 
 The offset is committed only after a record is handled, so a crash in the middle of processing redelivers the record instead of losing it.
 
@@ -86,6 +86,7 @@ Moves the order to a new status, following the [lifecycle](diagrams/order-lifecy
 | `404` | No order with that id | `OrderNotFoundException` |
 | `409` | Transition not allowed. The response includes `currentStatus` and `allowedStatuses`. | `InvalidStatusTransitionException` |
 | `409` | The order was changed by another request at the same moment | `OptimisticLockingFailureException` |
+| `503` | MongoDB is down or too slow; the `Retry-After` header says when to try again | `DataAccessResourceFailureException` |
 | `500` | Anything unexpected (details are only logged) | any other exception |
 
 Example `409`:

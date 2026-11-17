@@ -41,8 +41,8 @@ The receipt goes through the application logger rather than `System.out`, so it 
 
 | Problem | Behavior |
 |---|---|
-| Message is not valid JSON | Logged and skipped without retrying |
-| Any other error while printing | Retried twice, 1 second apart, then logged and skipped, so one bad record never blocks the rest |
+| Message is not valid JSON | Sent to `pedidos.print-service.DLT`, byte for byte, without retrying |
+| Any other error while printing | Retried twice, 1 second apart, then sent to the dead letter topic, so one bad record never blocks the rest and can still be replayed |
 
 ## Configuration
 

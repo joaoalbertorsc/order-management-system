@@ -78,14 +78,19 @@ Every failure has a custom exception or a well-defined behavior:
 | Malformed JSON body | both APIs | `HttpMessageNotReadableException` | `400` |
 | Business rule broken (same product twice, total above limit) | order-service | `InvalidOrderException` | `422` |
 | Kafka unreachable or not acknowledging in time | order-service | `OrderPublishingException` | `503`, metric `orders.publish.failures` |
-| Message on the topic is not valid JSON | both consumers | `ErrorHandlingDeserializer` | Logged and skipped, no retry |
-| Message is missing required data | processing-service | `InvalidOrderEventException` | Logged and skipped, no retry |
-| MongoDB temporarily down | processing-service | `DefaultErrorHandler` | Retried 3 times, 1 second apart, then logged and skipped |
+| Kafka failing repeatedly | order-service | Resilience4j circuit breaker, `PublishingSuspendedException` | `503` with `Retry-After` at once, without calling Kafka, until trial publishes succeed |
+| Message on the topic is not valid JSON | both consumers | `ErrorHandlingDeserializer` | Moved to the service's dead letter topic as it arrived, no retry |
+| Message is missing required data | processing-service | `InvalidOrderEventException` | Moved to the dead letter topic, no retry |
+| MongoDB temporarily down | processing-service | `DefaultErrorHandler`, exponential backoff | Retried for up to 5 minutes (1 s, 2 s, 4 s... at most 30 s apart) while the partition waits, then moved to the dead letter topic |
+| Printing fails | print-service | `DefaultErrorHandler` | Retried twice, 1 second apart, then moved to the dead letter topic |
 | Same order delivered twice | processing-service | `DuplicateKeyException` on insert | Ignored (idempotent), metric `orders.duplicates` |
 | Order id does not exist | processing-service | `OrderNotFoundException` | `404` |
 | Status change not allowed by the lifecycle | processing-service | `InvalidStatusTransitionException` | `409` listing the allowed statuses |
 | Two status updates at the same time | processing-service | Optimistic locking (`@Version`) | `409`, client retries |
+| MongoDB down while a client reads or updates orders | processing-service | Driver timeouts (3 s to find the server, 5 s per read) and `DataAccessResourceFailureException` | `503` with `Retry-After: 5`, within a few seconds instead of 30 |
 | Anything unexpected | both APIs | Catch-all handler | `500` without internal details (logged in full) |
+
+No order is dropped by a consumer. A record it cannot handle goes to its own dead letter topic, `pedidos.processing-service.DLT` or `pedidos.print-service.DLT`, with the original key and value plus headers naming the original topic, partition, offset and exception. It can be inspected in Kafka UI and replayed by publishing it to `pedidos` again. Each service has its own topic, so replaying a record only affects the service that failed it, as long as it is sent back to that service alone.
 
 HTTP errors use the standard [RFC 7807 Problem Details](https://www.rfc-editor.org/rfc/rfc7807) format:
 
@@ -126,7 +131,6 @@ Spring Boot Actuator is enabled in every service. It exposes `health` (with deta
 
 ## Possible next steps
 
-- **Dead letter topic (`pedidos.DLT`)** for records that fail after all retries, so they can be inspected and replayed instead of only logged.
 - **Transactional outbox** in the order-service, if it ever stores orders itself, to save and publish atomically.
 - **Status-change events** (e.g. `OrderStatusChanged`) published by the processing-service, so other services can react to them.
 - **Distributed tracing with Zipkin** (Micrometer Tracing) to follow one order across the three services. Optional in the exercise.
