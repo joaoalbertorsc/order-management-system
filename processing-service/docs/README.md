@@ -86,6 +86,7 @@ Moves the order to a new status, following the [lifecycle](diagrams/order-lifecy
 | `404` | No order with that id | `OrderNotFoundException` |
 | `409` | Transition not allowed. The response includes `currentStatus` and `allowedStatuses`. | `InvalidStatusTransitionException` |
 | `409` | The order was changed by another request at the same moment | `OptimisticLockingFailureException` |
+| `503` | MongoDB is down or too slow; the `Retry-After` header says when to try again | `DataAccessResourceFailureException` |
 | `500` | Anything unexpected (details are only logged) | any other exception |
 
 Example `409`:
