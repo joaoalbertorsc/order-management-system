@@ -24,11 +24,11 @@ flowchart LR
     client -- "GET /orders<br/>PATCH /orders/{id}/status" --> processing
 ```
 
-| Service | Port | Responsibility |
-|---|---|---|
-| [order-service](order-service/docs/README.md) | 8081 | Receives orders (`POST /orders`), validates them and publishes them to the `pedidos` topic |
-| [processing-service](processing-service/docs/README.md) | 8082 | Consumes `pedidos`, stores each order in MongoDB, lists orders and updates their status |
-| [print-service](print-service/docs/README.md) | 8083 | Consumes `pedidos` and prints each order to the console |
+| Service | Port | Responsibility | CI |
+|---|---|---|---|
+| [order-service](order-service/docs/README.md) | 8081 | Receives orders (`POST /orders`), validates them and publishes them to the `pedidos` topic | [![order-service](https://github.com/joaoalbertorsc/order-management-system/actions/workflows/order-service.yml/badge.svg?branch=main)](https://github.com/joaoalbertorsc/order-management-system/actions/workflows/order-service.yml) |
+| [processing-service](processing-service/docs/README.md) | 8082 | Consumes `pedidos`, stores each order in MongoDB, lists orders and updates their status | [![processing-service](https://github.com/joaoalbertorsc/order-management-system/actions/workflows/processing-service.yml/badge.svg?branch=main)](https://github.com/joaoalbertorsc/order-management-system/actions/workflows/processing-service.yml) |
+| [print-service](print-service/docs/README.md) | 8083 | Consumes `pedidos` and prints each order to the console | [![print-service](https://github.com/joaoalbertorsc/order-management-system/actions/workflows/print-service.yml/badge.svg?branch=main)](https://github.com/joaoalbertorsc/order-management-system/actions/workflows/print-service.yml) |
 
 ## Tech stack
 
