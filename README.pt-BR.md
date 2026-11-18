@@ -26,11 +26,11 @@ flowchart LR
     client -- "GET /orders<br/>PATCH /orders/{id}/status" --> processing
 ```
 
-| Serviço | Porta | Responsabilidade |
-|---|---|---|
-| [order-service](order-service/docs/README.md) | 8081 | Recebe os pedidos (`POST /orders`), valida e publica no tópico `pedidos` |
-| [processing-service](processing-service/docs/README.md) | 8082 | Consome o `pedidos`, salva cada pedido no MongoDB, lista os pedidos e atualiza o status |
-| [print-service](print-service/docs/README.md) | 8083 | Consome o `pedidos` e exibe cada pedido no console |
+| Serviço | Porta | Responsabilidade | CI |
+|---|---|---|---|
+| [order-service](order-service/docs/README.md) | 8081 | Recebe os pedidos (`POST /orders`), valida e publica no tópico `pedidos` | [![order-service](https://github.com/joaoalbertorsc/order-management-system/actions/workflows/order-service.yml/badge.svg?branch=main)](https://github.com/joaoalbertorsc/order-management-system/actions/workflows/order-service.yml) |
+| [processing-service](processing-service/docs/README.md) | 8082 | Consome o `pedidos`, salva cada pedido no MongoDB, lista os pedidos e atualiza o status | [![processing-service](https://github.com/joaoalbertorsc/order-management-system/actions/workflows/processing-service.yml/badge.svg?branch=main)](https://github.com/joaoalbertorsc/order-management-system/actions/workflows/processing-service.yml) |
+| [print-service](print-service/docs/README.md) | 8083 | Consome o `pedidos` e exibe cada pedido no console | [![print-service](https://github.com/joaoalbertorsc/order-management-system/actions/workflows/print-service.yml/badge.svg?branch=main)](https://github.com/joaoalbertorsc/order-management-system/actions/workflows/print-service.yml) |
 
 ## Tecnologias
 
